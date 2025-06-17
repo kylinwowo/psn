@@ -8,6 +8,12 @@
   "license": "MIT",
   "commands": [
     {
+      "name": "trophy",
+      "title": "Trophy",
+      "description": "Trophy of PSN user",
+      "mode": "no-view"
+    },
+    {
       "name": "gettrophy",
       "title": "GetTrophy",
       "description": "Get PSN user trophies",
