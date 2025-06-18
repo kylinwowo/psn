@@ -1,4 +1,4 @@
-import { List, ActionPanel, Action, Icon, useNavigation } from "@raycast/api";
+import { List, ActionPanel, Action, Icon, useNavigation, showToast, Toast } from "@raycast/api";
 import { useState, useEffect } from "react";
 import { getTitleTrophies, getUserTrophiesEarnedForTitle } from "psn-api";
 import { getValidAuthorization } from "../utils/auth";
@@ -11,7 +11,7 @@ interface GameDetailProps {
 
 export function GameDetail({ game }: GameDetailProps) {
   const [trophies, setTrophies] = useState<Trophy[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const { pop } = useNavigation();
 
   useEffect(() => {
@@ -19,13 +19,29 @@ export function GameDetail({ game }: GameDetailProps) {
   }, []);
 
   async function loadTrophies() {
+    let authorization;
+    setIsLoading(true);
+    
+    const loadingToast = await showToast({
+      style: Toast.Style.Animated,
+      title: "Loading trophies...",
+    });
+
     try {
-      const authorization = await getValidAuthorization();
-      const trophyData = await getTitleTrophies(authorization, game.npCommunicationId, 'all');
+      authorization = await getValidAuthorization();
+    } catch (authError) {
+      // Auth errors are handled in the auth utility, just log here
+      console.error("Authentication failed:", authError);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const titleTrophyData = await getTitleTrophies(authorization, game.npCommunicationId, 'all');
       const userTrophyData = await getUserTrophiesEarnedForTitle(authorization, 'me', game.npCommunicationId, 'all');
       
-      if (trophyData && trophyData.trophies) {
-        const trophiesData: Trophy[] = trophyData.trophies.map((trophy: any) => {
+      if (titleTrophyData && titleTrophyData.trophies) {
+        const trophiesData: Trophy[] = titleTrophyData.trophies.map((trophy: any) => {
           // Find corresponding user trophy data
           const userTrophy = userTrophyData?.trophies?.find(
             (userTrophy: any) => userTrophy.trophyId === trophy.trophyId
@@ -46,9 +62,21 @@ export function GameDetail({ game }: GameDetailProps) {
         });
 
         setTrophies(trophiesData);
+        
+        await showToast({
+          style: Toast.Style.Success,
+          title: "Trophies loaded",
+          message: `Found ${trophiesData.length} trophies`
+        });
       }
     } catch (error) {
       console.error("Error fetching trophies:", error);
+      
+      await showToast({
+        style: Toast.Style.Failure,
+        title: "Failed to fetch trophies",
+        message: "Unable to retrieve trophy data. Please try again later."
+      });
     } finally {
       setIsLoading(false);
     }
@@ -69,22 +97,6 @@ export function GameDetail({ game }: GameDetailProps) {
     }
   }
 
-  function getTrophyCount(type: string): number {
-    return trophies.filter(trophy => trophy.trophyType.toLowerCase() === type.toLowerCase() && trophy.earned).length;
-  }
-
-  function getTotalTrophyCount(type: string): number {
-    return trophies.filter(trophy => trophy.trophyType.toLowerCase() === type.toLowerCase()).length;
-  }
-
-  const platinumCount = getTrophyCount('platinum');
-  const goldCount = getTrophyCount('gold');
-  const silverCount = getTrophyCount('silver');
-  const bronzeCount = getTrophyCount('bronze');
-  const totalEarned = platinumCount + goldCount + silverCount + bronzeCount;
-  const totalTrophies = trophies.length;
-  const progress = totalTrophies > 0 ? Math.round((totalEarned / totalTrophies) * 100) : 0;
-
   return (
     <List isLoading={isLoading} navigationTitle={game.trophyTitleName}>
       <List.Section title="Game Information">
@@ -98,11 +110,6 @@ export function GameDetail({ game }: GameDetailProps) {
             { text: `${game.earnedTrophies.silver}`, icon: "silver.png" },
             { text: `${game.earnedTrophies.bronze}`, icon: "bronze.png" },
           ]}
-          actions={
-            <ActionPanel>
-              <Action title="Back" icon={Icon.ArrowLeft} onAction={pop} />
-            </ActionPanel>
-          }
         />
       </List.Section>
       
@@ -121,15 +128,6 @@ export function GameDetail({ game }: GameDetailProps) {
                 }
               },
             ]}
-            actions={
-              <ActionPanel>
-                <Action.CopyToClipboard
-                  title="Copy Trophy Name"
-                  content={trophy.trophyName}
-                />
-                <Action title="Back" icon={Icon.ArrowLeft} onAction={pop} />
-              </ActionPanel>
-            }
           />
         ))}
       </List.Section>

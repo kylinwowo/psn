@@ -1,13 +1,14 @@
+import { Grid, List, ActionPanel, Action, Icon, useNavigation, showToast, Toast } from "@raycast/api";
 import { useState, useEffect } from "react";
-import { showToast, Toast } from "@raycast/api";
 import { getUserTitles } from "psn-api";
 import { getValidAuthorization } from "./utils/auth";
-import { RecentlyPlayedGrid } from "./components/RecentlyPlayedGrid";
 import { Game } from "./types";
+import { GameDetail } from "./components/GameDetail";
 
 export default function RecentlyPlayed() {
+  const { push } = useNavigation();
   const [games, setGames] = useState<Game[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     loadRecentlyPlayedGames();
@@ -15,6 +16,12 @@ export default function RecentlyPlayed() {
 
   async function loadRecentlyPlayedGames() {
     let authorization;
+    setIsLoading(true);
+    
+    const loadingToast = await showToast({
+      style: Toast.Style.Animated,
+      title: "Loading games...",
+    });
     
     try {
       authorization = await getValidAuthorization();
@@ -26,9 +33,8 @@ export default function RecentlyPlayed() {
     }
     
     try {
-      const userTitles = await getUserTitles(authorization, 'me', {
-        offset: 0
-      });
+      const userTitles = await getUserTitles(authorization, 'me');
+      console.log(userTitles);
 
       const gamesData: Game[] = userTitles.trophyTitles.map((title: any) => ({
         npCommunicationId: title.npCommunicationId,
@@ -53,10 +59,14 @@ export default function RecentlyPlayed() {
         earnedDateTime: title.earnedDateTime,
         lastUpdatedDateTime: title.lastUpdatedDateTime,
       }));
+
       setGames(gamesData);
       
-      setIsLoading(false);
-      
+      await showToast({
+        style: Toast.Style.Success,
+        title: "Games loaded",
+        message: `Found ${gamesData.length} recently played games`
+      });
     } catch (profileError) {
       console.error("Error fetching recently played games:", profileError);
       
@@ -65,16 +75,51 @@ export default function RecentlyPlayed() {
         title: "Failed to fetch games",
         message: "Unable to retrieve your recently played games. Please try again later."
       });
-      
+    } finally {
       setIsLoading(false);
     }
   }
-
+  
+  // If not loading and no games, show empty state using List
+  if (!isLoading && games.length === 0) {
+    return (
+      <List>
+        <List.EmptyView
+          icon={Icon.GameController}
+          title="No Recent Games"
+        />
+      </List>
+    );
+  }
+  
   return (
-    <RecentlyPlayedGrid
-      games={games} 
-      isLoading={isLoading} 
-      onRefresh={loadRecentlyPlayedGames}
-    />
+    <Grid 
+      columns={5} 
+      isLoading={isLoading}
+    >
+      {games.map((game) => {
+        return (
+          <Grid.Item
+            key={game.npCommunicationId}
+            content={game.trophyTitleIconUrl || Icon.GameController}
+            actions={
+              <ActionPanel>
+                <Action
+                  title="View Game Details"
+                  icon={Icon.Eye}
+                  onAction={() => push(<GameDetail game={game} />)}
+                />
+                <Action
+                  title="Refresh"
+                  icon={Icon.ArrowClockwise}
+                  onAction={loadRecentlyPlayedGames}
+                  shortcut={{ modifiers: ["cmd"], key: "r" }}
+                />
+              </ActionPanel>
+            }
+          />
+        );
+      })}
+    </Grid>
   );
 }
