@@ -3,10 +3,10 @@ import { showToast, Toast } from "@raycast/api";
 import { getUserTitles } from "psn-api";
 import { getValidAuthorization } from "./utils/auth";
 import { RecentlyPlayedGrid } from "./components/RecentlyPlayedGrid";
-import { GameTitle } from "./types";
+import { Game } from "./types";
 
 export default function RecentlyPlayed() {
-  const [games, setGames] = useState<GameTitle[]>([]);
+  const [games, setGames] = useState<Game[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -29,14 +29,31 @@ export default function RecentlyPlayed() {
       const userTitles = await getUserTitles(authorization, 'me', {
         offset: 0
       });
-      
-      if (userTitles && userTitles.trophyTitles) {
-        setGames(userTitles.trophyTitles.map(game => ({
-          titleId: game.npCommunicationId || '',
-          name: game.trophyTitleName || '',
-          imageUrl: game.trophyTitleIconUrl || '',
-        })));
-      }
+
+      const gamesData: Game[] = userTitles.trophyTitles.map((title: any) => ({
+        npCommunicationId: title.npCommunicationId,
+        trophyTitleName: title.trophyTitleName,
+        trophyTitleIconUrl: title.trophyTitleIconUrl,
+        trophyTitlePlatform: title.trophyTitlePlatform,
+        hasTrophyGroups: title.hasTrophyGroups,
+        definedTrophies: {
+          bronze: title.definedTrophies.bronze,
+          silver: title.definedTrophies.silver,
+          gold: title.definedTrophies.gold,
+          platinum: title.definedTrophies.platinum,
+        },
+        earnedTrophies: {
+          bronze: title.earnedTrophies.bronze,
+          silver: title.earnedTrophies.silver,
+          gold: title.earnedTrophies.gold,
+          platinum: title.earnedTrophies.platinum,
+        },
+        hiddenFlag: title.hiddenFlag,
+        progress: title.progress,
+        earnedDateTime: title.earnedDateTime,
+        lastUpdatedDateTime: title.lastUpdatedDateTime,
+      }));
+      setGames(gamesData);
       
       setIsLoading(false);
       
