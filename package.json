@@ -18,6 +18,12 @@
       "title": "GetTrophy",
       "description": "Get PSN user trophies",
       "mode": "view"
+    },
+    {
+      "name": "recently-played",
+      "title": "Recently Played",
+      "description": "View recently played PSN games",
+      "mode": "view"
     }
   ],
   "preferences": [
