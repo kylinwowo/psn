@@ -3,9 +3,10 @@
   "name": "psn",
   "title": "Psn",
   "description": "Access your PlayStation Network profile, view recently played games and earned trophies",
-  "icon": "extension-icon.png",
+  "icon": "icon.png",
   "author": "kylinwowo",
   "license": "MIT",
+  "categories": ["Media", "Productivity"],
   "commands": [
     {
       "name": "trophy",
