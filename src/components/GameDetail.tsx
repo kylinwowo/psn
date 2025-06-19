@@ -1,4 +1,4 @@
-import { List, ActionPanel, Action, Icon, useNavigation, showToast, Toast } from "@raycast/api";
+import { List, Icon, showToast, Toast } from "@raycast/api";
 import { useState, useEffect } from "react";
 import { getTitleTrophies, getUserTrophiesEarnedForTitle } from "psn-api";
 import { getValidAuthorization } from "../utils/auth";
@@ -12,7 +12,6 @@ interface GameDetailProps {
 export function GameDetail({ game }: GameDetailProps) {
   const [trophies, setTrophies] = useState<Trophy[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const { pop } = useNavigation();
 
   useEffect(() => {
     loadTrophies();
@@ -21,8 +20,8 @@ export function GameDetail({ game }: GameDetailProps) {
   async function loadTrophies() {
     let authorization;
     setIsLoading(true);
-    
-    const loadingToast = await showToast({
+
+    await showToast({
       style: Toast.Style.Animated,
       title: "Loading trophies...",
     });
@@ -37,45 +36,40 @@ export function GameDetail({ game }: GameDetailProps) {
     }
 
     try {
-      const titleTrophyData = await getTitleTrophies(authorization, game.npCommunicationId, 'all');
-      const userTrophyData = await getUserTrophiesEarnedForTitle(authorization, 'me', game.npCommunicationId, 'all');
-      
+      const titleTrophyData = await getTitleTrophies(authorization, game.npCommunicationId, "all");
+      const userTrophyData = await getUserTrophiesEarnedForTitle(authorization, "me", game.npCommunicationId, "all");
+
       if (titleTrophyData && titleTrophyData.trophies) {
-        const trophiesData: Trophy[] = titleTrophyData.trophies.map((trophy: any) => {
+        const trophiesData = titleTrophyData.trophies.map((trophy) => {
           // Find corresponding user trophy data
-          const userTrophy = userTrophyData?.trophies?.find(
-            (userTrophy: any) => userTrophy.trophyId === trophy.trophyId
-          );
-          
+          const userTrophy = userTrophyData?.trophies?.find((userTrophy) => userTrophy.trophyId === trophy.trophyId);
+
           return {
             trophyId: trophy.trophyId,
             trophyHidden: trophy.trophyHidden,
             earned: userTrophy?.earned || false,
-            earnedDateTime: userTrophy?.earnedDateTime,
             trophyType: trophy.trophyType,
-            trophyName: trophy.trophyName,
-            trophyDetail: trophy.trophyDetail,
-            trophyIconUrl: trophy.trophyIconUrl,
-            trophyRare: trophy.trophyRare,
-            trophyEarnedRate: trophy.trophyEarnedRate,
+            trophyName: trophy.trophyName || "",
+            trophyDetail: trophy.trophyDetail || "",
+            trophyIconUrl: trophy.trophyIconUrl || "",
           };
         });
 
         setTrophies(trophiesData);
-        
+
         await showToast({
           style: Toast.Style.Success,
           title: "Trophies loaded",
-          message: `Found ${trophiesData.length} trophies`
+          message: `Found ${trophiesData.length} trophies`,
         });
       }
     } catch (error) {
       console.error("Error fetching trophies:", error);
-      
+
       await showToast({
         style: Toast.Style.Failure,
         title: "Failed to fetch trophies",
-        message: "Unable to retrieve trophy data. Please try again later."
+        message: "Unable to retrieve trophy data. Please try again later.",
       });
     } finally {
       setIsLoading(false);
@@ -84,14 +78,14 @@ export function GameDetail({ game }: GameDetailProps) {
 
   function getTrophyIcon(trophyType: string): string {
     switch (trophyType.toLowerCase()) {
-      case 'platinum':
-        return '../assets/platinum.png';
-      case 'gold':
-        return '../assets/gold.png';
-      case 'silver':
-        return '../assets/silver.png';
-      case 'bronze':
-        return '../assets/bronze.png';
+      case "platinum":
+        return "../assets/platinum.png";
+      case "gold":
+        return "../assets/gold.png";
+      case "silver":
+        return "../assets/silver.png";
+      case "bronze":
+        return "../assets/bronze.png";
       default:
         return Icon.Trophy;
     }
@@ -112,7 +106,7 @@ export function GameDetail({ game }: GameDetailProps) {
           ]}
         />
       </List.Section>
-      
+
       <List.Section title="Trophies">
         {trophies.map((trophy) => (
           <List.Item
@@ -121,11 +115,11 @@ export function GameDetail({ game }: GameDetailProps) {
             title={trophy.trophyName}
             subtitle={trophy.trophyDetail}
             accessories={[
-              { 
+              {
                 icon: {
                   source: trophy.earned ? Icon.CheckCircle : Icon.Circle,
-                  tintColor: trophy.earned ? Color.Green : Color.SecondaryText
-                }
+                  tintColor: trophy.earned ? Color.Green : Color.SecondaryText,
+                },
               },
             ]}
           />

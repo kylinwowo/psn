@@ -18,7 +18,6 @@ export interface Game {
   };
   hiddenFlag: boolean;
   progress: number;
-  earnedDateTime: string;
   lastUpdatedDateTime: string;
 }
 
@@ -29,8 +28,5 @@ export interface Trophy {
   trophyName: string;
   trophyDetail: string;
   trophyIconUrl: string;
-  trophyRare: number;
-  trophyEarnedRate: string;
   earned: boolean;
-  earnedDateTime?: string;
 }

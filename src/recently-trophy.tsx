@@ -1,26 +1,26 @@
-import { Grid, List, ActionPanel, Action, Icon, useNavigation, showToast, Toast } from "@raycast/api";
+import { List, ActionPanel, Action, showToast, Toast, Icon, useNavigation } from "@raycast/api";
 import { useState, useEffect } from "react";
-import { getUserTitles } from "psn-api";
 import { getValidAuthorization } from "./utils/auth";
+import { getUserTitles } from "psn-api";
 import { Game } from "./types";
 import { GameDetail } from "./components/GameDetail";
 
-export default function RecentlyPlayed() {
+export default function RecentlyTrophy() {
   const { push } = useNavigation();
   const [games, setGames] = useState<Game[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    loadRecentlyPlayedGames();
+    loadRecentlyTrophy();
   }, []);
 
-  async function loadRecentlyPlayedGames() {
+  async function loadRecentlyTrophy() {
     let authorization;
     setIsLoading(true);
 
     await showToast({
       style: Toast.Style.Animated,
-      title: "Loading games...",
+      title: "Loading trophies...",
     });
 
     try {
@@ -62,16 +62,16 @@ export default function RecentlyPlayed() {
 
       await showToast({
         style: Toast.Style.Success,
-        title: "Games loaded",
-        message: `Found ${gamesData.length} recently played games`,
+        title: "Trophies loaded",
+        message: `Found ${gamesData.length} recently trophies`,
       });
-    } catch (profileError) {
-      console.error("Error fetching recently played games:", profileError);
+    } catch (error) {
+      console.error("Error fetching recently trophies:", error);
 
       await showToast({
         style: Toast.Style.Failure,
-        title: "Failed to fetch games",
-        message: "Unable to retrieve your recently played games. Please try again later.",
+        title: "Failed to fetch trophies",
+        message: "Unable to retrieve your recently trophies. Please try again later.",
       });
     } finally {
       setIsLoading(false);
@@ -82,32 +82,37 @@ export default function RecentlyPlayed() {
   if (!isLoading && games.length === 0) {
     return (
       <List>
-        <List.EmptyView icon={Icon.GameController} title="No Recent Games" />
+        <List.EmptyView icon={Icon.GameController} title="No Recent Trophies" />
       </List>
     );
   }
 
   return (
-    <Grid columns={5} isLoading={isLoading}>
-      {games.map((game) => {
-        return (
-          <Grid.Item
-            key={game.npCommunicationId}
-            content={game.trophyTitleIconUrl || Icon.GameController}
-            actions={
-              <ActionPanel>
-                <Action title="View Game Details" icon={Icon.Eye} onAction={() => push(<GameDetail game={game} />)} />
-                <Action
-                  title="Refresh"
-                  icon={Icon.ArrowClockwise}
-                  onAction={loadRecentlyPlayedGames}
-                  shortcut={{ modifiers: ["cmd"], key: "r" }}
-                />
-              </ActionPanel>
-            }
-          />
-        );
-      })}
-    </Grid>
+    <List isLoading={isLoading} searchBarPlaceholder="Search games...">
+      {games.map((game) => (
+        <List.Item
+          key={game.npCommunicationId}
+          icon={game.trophyTitleIconUrl}
+          title={game.trophyTitleName}
+          accessories={[
+            { text: `${game.earnedTrophies.platinum}`, icon: "platinum.png" },
+            { text: `${game.earnedTrophies.gold}`, icon: "gold.png" },
+            { text: `${game.earnedTrophies.silver}`, icon: "silver.png" },
+            { text: `${game.earnedTrophies.bronze}`, icon: "bronze.png" },
+          ]}
+          actions={
+            <ActionPanel>
+              <Action title="View Game Details" icon={Icon.Eye} onAction={() => push(<GameDetail game={game} />)} />
+              <Action
+                title="Refresh"
+                icon={Icon.ArrowClockwise}
+                onAction={loadRecentlyTrophy}
+                shortcut={{ modifiers: ["cmd"], key: "r" }}
+              />
+            </ActionPanel>
+          }
+        />
+      ))}
+    </List>
   );
 }
